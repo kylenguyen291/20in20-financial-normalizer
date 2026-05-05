@@ -1,0 +1,8 @@
+.env
+api_key.txt
+data/raw/
+data/processed/
+output/
+__pycache__/
+*.pyc
+.DS_Store
