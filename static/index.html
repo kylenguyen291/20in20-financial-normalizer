@@ -240,24 +240,38 @@ async function startRun() {
 }
 
 function streamLogs(jobId, tickers, years) {
-  const es = new EventSource('/api/logs/'+jobId);
-  es.onmessage = e => {
+  let cursor = 0;
+  let pollTimer = null;
+
+  async function poll() {
     try {
-      const p = JSON.parse(e.data);
-      if(p.type==='log'){
-        logLines.push({msg:p.message});
-        appendLog(p.message);
-        updateProgress(false, false);
+      const res = await fetch(`/api/status/${jobId}?from_=${cursor}`);
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+
+      // Append any new lines
+      for (const msg of data.lines) {
+        logLines.push({msg});
+        appendLog(msg);
       }
-      if(p.type==='complete'){
-        es.close();
-        const hasError = p.status==='error';
-        updateProgress(p.status==='done', hasError);
-        showResults(p, tickers, years, hasError);
+      cursor = data.next;
+      updateProgress(false, false);
+
+      if (data.status === 'done' || data.status === 'error') {
+        const hasError = data.status === 'error';
+        updateProgress(data.status === 'done', hasError);
+        showResults(data, tickers, years, hasError);
+        return; // stop polling
       }
-    } catch{}
-  };
-  es.onerror = ()=>{es.close();appendLog('✗ Connection lost — check backend.');updateProgress(false,true);};
+    } catch(e) {
+      appendLog('✗ Poll error: ' + e.message);
+      updateProgress(false, true);
+      return; // stop polling on error
+    }
+    pollTimer = setTimeout(poll, 1000);
+  }
+
+  poll();
 }
 
 function showResults(p, tickers, years, hasError) {

@@ -163,31 +163,25 @@ def start_run(req: RunRequest):
     return {"job_id": job_id}
 
 
-@app.get("/api/logs/{job_id}")
-async def stream_logs(job_id: str):
-    if job_id not in _jobs:
+@app.get("/api/status/{job_id}")
+def poll_status(job_id: str, from_: int = 0):
+    """
+    Polling endpoint — returns new log lines since index `from_`.
+    Frontend calls this every second instead of using SSE.
+    Works through all proxies/CDNs without buffering issues.
+    """
+    job = _jobs.get(job_id)
+    if not job:
         raise HTTPException(404, "Job not found.")
-
-    async def gen():
-        sent = 0
-        while True:
-            job = _jobs[job_id]
-            logs = job["logs"]
-            while sent < len(logs):
-                payload = json.dumps({"type": "log", "message": logs[sent]})
-                yield f"data: {payload}\n\n"
-                sent += 1
-            if job["status"] in ("done", "error"):
-                while sent < len(logs):
-                    payload = json.dumps({"type": "log", "message": logs[sent]})
-                    yield f"data: {payload}\n\n"
-                    sent += 1
-                yield f"data: {json.dumps({'type': 'complete', 'status': job['status'], 'output_paths': job.get('output_paths', []), 'error': job.get('error')})}\n\n"
-                break
-            await asyncio.sleep(0.25)
-
-    return StreamingResponse(gen(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    logs = job["logs"]
+    new_lines = logs[from_:]
+    return {
+        "lines": new_lines,
+        "next": from_ + len(new_lines),
+        "status": job["status"],
+        "output_paths": job.get("output_paths", []),
+        "error": job.get("error"),
+    }
 
 
 @app.get("/api/download/{job_id}")
