@@ -398,12 +398,31 @@ def normalize(content, ticker: str, year: int, force: bool = False,
         return None
 
     if data is None:
-        print(f"  ✗ Normalization failed for {ticker} {year}")
-        return None
+        print(f"  ⚠ All attempts failed for {ticker} {year} — inserting placeholder (N/A)")
+        data = {
+            "company": ticker,
+            "year": year,
+            "unit": "million VND",
+            "extraction_failed": True,
+            "income_statement": {
+                "net_revenue": None, "gross_profit": None, "operating_profit": None,
+                "net_profit": None, "ebitda": None,
+            },
+            "balance_sheet": {
+                "total_assets": None, "total_liabilities": None, "equity": None,
+                "cash_and_equivalents": None, "total_debt": None,
+            },
+            "cash_flow": {
+                "cfo": None, "cfi": None, "cff": None, "capex": None, "fcf": None,
+            },
+        }
 
     data = _validate(data, ticker, year)
     cache_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"  ✓ Saved → {cache_path.name}")
+    if data.get("extraction_failed"):
+        print(f"  ⚠ Placeholder saved → {cache_path.name}")
+    else:
+        print(f"  ✓ Saved → {cache_path.name}")
     return data
 
 
