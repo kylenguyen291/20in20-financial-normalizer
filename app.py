@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 load_dotenv()
@@ -179,13 +179,16 @@ def poll_status(job_id: str, offset: int = 0):
         raise HTTPException(404, "Job not found.")
     logs = job["logs"]
     new_lines = logs[offset:]
-    return {
-        "lines": new_lines,
-        "next": offset + len(new_lines),
-        "status": job["status"],
-        "output_paths": job.get("output_paths", []),
-        "error": job.get("error"),
-    }
+    return JSONResponse(
+        content={
+            "lines": new_lines,
+            "next": offset + len(new_lines),
+            "status": job["status"],
+            "output_paths": job.get("output_paths", []),
+            "error": job.get("error"),
+        },
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+    )
 
 
 @app.get("/api/download/{job_id}")
