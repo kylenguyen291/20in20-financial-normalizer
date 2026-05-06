@@ -224,7 +224,7 @@ async function startRun() {
   document.getElementById('form-section').style.display='none';
   document.getElementById('run-section').style.display='block';
   document.getElementById('done-section').style.display='none';
-  renderSteps(1, false);
+
 
   try {
     const res = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tickers,years})});
