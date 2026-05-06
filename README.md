@@ -4,14 +4,6 @@ A Python pipeline that automatically downloads, extracts, and normalizes Vietnam
 
 ---
 
-## 🌐 Live Web App
-
-**No setup required — try it directly in your browser:**
-
-👉 **[https://financial-normalizer.streamlit.app/](https://financial-normalizer.streamlit.app/)**
-
-Enter your tickers, years, and API key — the tool handles everything else and lets you download the Excel files when done.
-
 **API Key:** A demo API key is provided in [`api_key.txt`](./api_key.txt) in this repository.
 
 ---
