@@ -135,7 +135,7 @@ def main():
     print("=" * 60)
 
     # ── Step 1: Download ──────────────────────────────────────────
-    if not args.skip_download and not args.skip_extract and not args.skip_normalize:
+    if not args.skip_download and not args.skip_extract:
         print("\n[Step 1/4] Downloading PDFs from CafeF...")
         from src.downloader import run as download
         pdf_paths = download(tickers=tickers, years=years)

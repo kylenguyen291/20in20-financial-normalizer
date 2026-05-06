@@ -39,7 +39,7 @@ def _extract_page_text(page) -> str:
     return text.strip() if text else ""
 
 
-def _pdf_to_images(pdf_path: Path, max_pages: int = 30, dpi: int = 120) -> list[dict]:
+def _pdf_to_images(pdf_path: Path, max_pages: int = 25, dpi: int = 72) -> list[dict]:
     """
     Convert first `max_pages` of a PDF to base64-encoded PNG images.
     Returns list of Anthropic vision content dicts.

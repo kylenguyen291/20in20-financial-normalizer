@@ -48,7 +48,7 @@ The JSON must have this exact structure. Each section has TWO parts:
 {
   "company": "<TICKER>",
   "year": <YEAR as integer>,
-  "unit": "billion VND",
+  "unit": "million VND",
   "income_statement": {
     "net_revenue": <number or null>,
     "cost_of_goods_sold": <number or null>,
@@ -68,7 +68,7 @@ The JSON must have this exact structure. Each section has TWO parts:
     "net_income_parent": <number or null>,
     "net_income_minority": <number or null>,
     "raw_lines": [
-      {"label": "<exact Vietnamese label>", "code": "<mã số or null>", "value": <number in billion VND or null>, "type": "<total|subtotal|item>"}
+      {"label": "<exact Vietnamese label>", "code": "<mã số or null>", "value": <number in million VND or null>, "type": "<total|subtotal|item>"}
     ]
   },
   "balance_sheet": {
@@ -101,7 +101,7 @@ The JSON must have this exact structure. Each section has TWO parts:
     "total_equity": <number or null>,
     "total_liabilities_and_equity": <number or null>,
     "raw_lines": [
-      {"label": "<exact Vietnamese label>", "code": "<mã số or null>", "value": <number in billion VND or null>, "type": "<total|subtotal|item>"}
+      {"label": "<exact Vietnamese label>", "code": "<mã số or null>", "value": <number in million VND or null>, "type": "<total|subtotal|item>"}
     ]
   },
   "cash_flow": {
@@ -124,7 +124,7 @@ The JSON must have this exact structure. Each section has TWO parts:
     "opening_cash_balance": <number or null>,
     "closing_cash_balance": <number or null>,
     "raw_lines": [
-      {"label": "<exact Vietnamese label>", "code": "<mã số or null>", "value": <number in billion VND or null>, "type": "<total|subtotal|item>"}
+      {"label": "<exact Vietnamese label>", "code": "<mã số or null>", "value": <number in million VND or null>, "type": "<total|subtotal|item>"}
     ]
   }
 }

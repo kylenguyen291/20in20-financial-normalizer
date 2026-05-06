@@ -119,9 +119,11 @@ def _compute(entry: dict) -> dict:
     # Derived intermediates
     ebitda = _sum2(ebit, dep)
     td     = _sum2(stl, ltl)
-    nd     = _sum2(td, -cash if cash is not None else None)
+    # Net Debt requires BOTH total debt and cash to be known — use None if either is missing
+    nd     = (td - cash) if (td is not None and cash is not None) else None
     fcf    = _sum2(opcf, capex)
-    tca_ex_inv = _sum2(tca, -inv if inv is not None else None)
+    # Quick ratio numerator requires BOTH tca and inv to be known — use None if tca is missing
+    tca_ex_inv = (tca - inv) if (tca is not None and inv is not None) else tca
 
     return {
         # ── Profitability ──────────────────────────────────────────────────────
@@ -533,7 +535,7 @@ def _generate_insights(computed: dict, tickers: list, years: list) -> list[str]:
         vals  = _vals(t, "Debt / Equity")
         trend = _trend(vals)
         if "improving" in trend or "declining" in trend:
-            direction = "building up debt" if "declining" in trend else "deleveraging"
+            direction = "deleveraging" if "declining" in trend else "building up debt"
             insights.append(f"  {t} D/E is {trend.split()[1]} — {direction}.")
 
     # ── Liquidity ──────────────────────────────────────────────────────────────

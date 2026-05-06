@@ -166,6 +166,17 @@ def _call_text(client, text: str, ticker: str, year: int, retries: int = 4,
                 system=_SYSTEM_PROMPT_FULL,
                 messages=[{"role": "user", "content": user_message}],
             )
+            if resp.stop_reason == "max_tokens":
+                if include_raw_lines:
+                    print(
+                        f"    ⚠ Output truncated (hit {CLAUDE_MAX_TOKENS}-token limit) — "
+                        f"retrying without raw_lines..."
+                    )
+                    return _call_text(client, text, ticker, year, retries=retries,
+                                      model=model, include_raw_lines=False)
+                else:
+                    print(f"    ✗ Output still truncated even without raw_lines — statement too large.")
+                    return None
             result = _parse_response(resp.content[0].text)
             if result is not None:
                 return result
@@ -189,7 +200,8 @@ def _call_vision(client, images: list[dict], ticker: str, year: int, retries: in
                  model: str = CLAUDE_MODEL, include_raw_lines: bool = True) -> dict | None:
     """Claude vision call for scanned PDFs (image input)."""
 
-    # Claude supports up to 20 images per request — use first 20 pages
+    # Claude supports up to 20 images per request — use first 20 pages.
+    # At 72 DPI each page is ~660×935 px ≈ 820 tokens; 20 pages ≈ 16k input tokens.
     batch = images[:20]
     if len(images) > 20:
         print(f"    ⚠ Using first 20 of {len(images)} pages")
@@ -216,6 +228,17 @@ def _call_vision(client, images: list[dict], ticker: str, year: int, retries: in
                 system=_SYSTEM_PROMPT_FULL,
                 messages=[{"role": "user", "content": batch + [text_prompt]}],
             )
+            if resp.stop_reason == "max_tokens":
+                if include_raw_lines:
+                    print(
+                        f"    ⚠ Output truncated (hit {CLAUDE_MAX_TOKENS}-token limit) — "
+                        f"retrying without raw_lines..."
+                    )
+                    return _call_vision(client, images, ticker, year, retries=retries,
+                                        model=model, include_raw_lines=False)
+                else:
+                    print(f"    ✗ Output still truncated even without raw_lines — statement too large.")
+                    return None
             result = _parse_response(resp.content[0].text)
             if result is not None:
                 return result
@@ -389,14 +412,18 @@ def run(extracted: dict | None = None, force: bool = False,
             continue
 
         print(f"\n[{stem}]")
+        cache_path = DATA_PROCESSED / f"{ticker}_{year}.json"
+        used_cache = cache_path.exists() and not force
         data = normalize(content, ticker, year, force=force,
                          model=model, include_raw_lines=include_raw_lines)
         if data:
             results.append(data)
-        # Pause between calls to stay under the 30k tokens/min rate limit.
+        # Pause between API calls to stay under the 30k tokens/min rate limit.
         # Vision calls consume ~20k–60k tokens each; without a gap the next
         # call arrives before the previous minute's window has cleared.
-        time.sleep(20)
+        # Skip the sleep when data was loaded from cache (no API call was made).
+        if not used_cache:
+            time.sleep(20)
 
     print(f"\n── Normalization complete: {len(results)} files ──")
     return results
