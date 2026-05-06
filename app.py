@@ -2,26 +2,24 @@
 app.py
 ──────
 Streamlit web app for the Vietnamese Financial Statement Normalizer.
-Streamlit Cloud compatible — users upload PDFs directly (no Playwright needed).
-Styled to match 20in20 Partners brand.
+Mirrors main.py: users enter tickers + years, PDFs are auto-downloaded
+from CafeF via Playwright, then extracted, normalized, and exported.
 """
 
 import io
 import os
-import sys
-import tempfile
-import threading
-import queue
-import zipfile
-import time
-from pathlib import Path
-
 import subprocess
+import sys
+import queue
+import threading
+import time
+import zipfile
+from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
 
-# ── Install Playwright browser once (required on Streamlit Cloud) ──────────────
+# ── Install Playwright Chromium once (required on Streamlit Cloud) ─────────────
 @st.cache_resource(show_spinner=False)
 def _install_playwright():
     subprocess.run(["playwright", "install", "chromium"], check=False)
@@ -38,7 +36,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR))
 
-# ── Brand CSS ─────────────────────────────────────────────────────────────────
+# ── Brand CSS ──────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
   html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
@@ -67,16 +65,6 @@ st.markdown("""
       border-color:#c9a042 !important;
       box-shadow:0 0 0 2px rgba(201,160,66,0.2) !important; }
   .stTextInput input::placeholder { color:#5a7aa0 !important; }
-
-  /* File uploader */
-  [data-testid="stFileUploader"] {
-      background-color:#162d57 !important;
-      border:1px dashed rgba(201,160,66,0.5) !important;
-      border-radius:6px !important; }
-  [data-testid="stFileUploader"] label {
-      color:#a0b8d8 !important; font-size:0.78rem !important;
-      font-weight:600 !important; letter-spacing:0.08em !important;
-      text-transform:uppercase !important; }
 
   /* Primary button */
   div[data-testid="stButton"] > button {
@@ -112,7 +100,7 @@ st.markdown("""
       font-family:'Courier New',monospace; font-size:0.76rem;
       padding:1rem 1.2rem; border-radius:4px;
       border:1px solid rgba(201,160,66,0.15);
-      max-height:320px; overflow-y:auto; white-space:pre-wrap; line-height:1.6; }
+      max-height:360px; overflow-y:auto; white-space:pre-wrap; line-height:1.6; }
   .success-card { background:rgba(46,160,67,0.1);
       border:1px solid rgba(46,160,67,0.4); border-radius:4px;
       padding:1rem 1.2rem; color:#4cbb6c; font-weight:600; font-size:0.9rem; }
@@ -126,19 +114,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Hero ──────────────────────────────────────────────────────────────────────
+# ── Hero ───────────────────────────────────────────────────────────────────────
 st.markdown('<p class="label-tag">20IN20 PARTNERS · RESEARCH TOOLS</p>', unsafe_allow_html=True)
 st.markdown('<h1 class="hero-title">Vietnamese Financial<br>Statement Normalizer</h1>', unsafe_allow_html=True)
 st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="hero-sub">Upload Vietnamese annual report PDFs, enter your API key, '
-    'and get clean Excel workbooks with normalized financials, ratio analysis, '
-    'and AI-generated insights.</p>',
+    '<p class="hero-sub">Enter Vietnamese stock tickers and years — the tool '
+    'automatically downloads annual reports from CafeF, normalizes the financials '
+    'with Claude AI, and exports clean Excel workbooks.</p>',
     unsafe_allow_html=True,
 )
 st.markdown("---")
 
-# ── Pipeline flowchart ────────────────────────────────────────────────────────
+# ── Pipeline flowchart ─────────────────────────────────────────────────────────
 st.markdown("""
 <div style="display:flex;align-items:center;justify-content:center;
             flex-wrap:nowrap;gap:0;margin-bottom:2rem;overflow-x:auto;">
@@ -156,7 +144,7 @@ st.markdown("""
   {"<div style='color:#c9a042;font-size:1.1rem;padding:0 0.3rem;margin-bottom:1.2rem;opacity:0.7;'>→</div>" if n < 5 else ""}
 """
     for n, label, sub in [
-        (1, "Upload", "PDF files"),
+        (1, "Download", "CafeF PDFs"),
         (2, "Extract", "Text / Images"),
         (3, "Normalize", "Claude AI"),
         (4, "Export", "Excel workbooks"),
@@ -164,31 +152,19 @@ st.markdown("""
     ]
 ]) + "</div>", unsafe_allow_html=True)
 
-# ── Inputs ────────────────────────────────────────────────────────────────────
-uploaded_files = st.file_uploader(
-    "Upload PDF files",
-    type=["pdf"],
-    accept_multiple_files=True,
-    help="Name your files as TICKER_YEAR.pdf (e.g. HPG_2023.pdf) for automatic detection",
-)
-st.markdown(
-    '<p class="hint">📎 Name files as <strong>TICKER_YEAR.pdf</strong> '
-    '— e.g. HPG_2023.pdf, VHM_2024.pdf</p>',
-    unsafe_allow_html=True,
-)
-
+# ── Inputs ─────────────────────────────────────────────────────────────────────
 col1, col2 = st.columns([1, 1])
 with col1:
     tickers_input = st.text_input(
-        "Tickers (auto-detected or override)",
+        "Stock Tickers",
         placeholder="HPG, HSG, NKG",
-        help="Leave blank to auto-detect from filenames",
+        help="Vietnamese stock ticker codes, comma-separated",
     )
 with col2:
     years_input = st.text_input(
-        "Years (auto-detected or override)",
+        "Years",
         placeholder="2022, 2023, 2024",
-        help="Leave blank to auto-detect from filenames",
+        help="Fiscal years to download and analyze",
     )
 
 api_key_input = st.text_input(
@@ -199,14 +175,18 @@ api_key_input = st.text_input(
 )
 
 with st.expander("Advanced options"):
-    use_sonnet  = st.checkbox("Use Claude Sonnet (higher accuracy, ~4× cost)", value=True)
-    no_raw      = st.checkbox("Skip raw lines (faster & cheaper)", value=False)
+    use_sonnet   = st.checkbox("Use Claude Sonnet (higher accuracy, ~4× cost)", value=True)
+    no_raw       = st.checkbox("Skip raw lines (faster & cheaper)", value=False)
+    skip_download  = st.checkbox("Skip download — use cached PDFs in data/raw/", value=False)
+    skip_extract   = st.checkbox("Skip extraction — use cached .txt files", value=False)
+    skip_normalize = st.checkbox("Skip normalization — use cached .json files", value=False)
+    force          = st.checkbox("Force re-run all steps (ignore cache)", value=False)
 
 st.markdown("<br>", unsafe_allow_html=True)
 run_button = st.button("RUN PIPELINE", use_container_width=True)
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers ────────────────────────────────────────────────────────────────────
 def _parse_list(s):
     return [x.strip().upper() for x in s.split(",") if x.strip()] if s.strip() else []
 
@@ -235,51 +215,82 @@ class _StreamCapture(io.StringIO):
     def flush(self): pass
 
 
-# ── Pipeline runner ───────────────────────────────────────────────────────────
-def run_pipeline(pdf_dir, tickers, years, api_key, use_sonnet, no_raw, log_q, result_q):
+# ── Pipeline runner (runs in background thread) ────────────────────────────────
+def run_pipeline(tickers, years, api_key, use_sonnet, no_raw,
+                 skip_download, skip_extract, skip_normalize, force,
+                 log_q, result_q):
     old_stdout = sys.stdout
     try:
         os.environ["ANTHROPIC_API_KEY"] = api_key
         sys.stdout = _StreamCapture(log_q)
 
-        from config import CLAUDE_MODEL, CLAUDE_MODEL_SONNET
+        from config import CLAUDE_MODEL, CLAUDE_MODEL_SONNET, OUTPUT_DIR, DATA_RAW, DATA_PROCESSED
         model = CLAUDE_MODEL_SONNET if use_sonnet else CLAUDE_MODEL
         include_raw = not no_raw
 
-        # Step 1: collect uploaded PDFs
-        pdf_paths = list(Path(pdf_dir).glob("*.pdf"))
-        log_q.put(f"[Step 1/5] Found {len(pdf_paths)} uploaded PDF(s)\n")
-        for p in pdf_paths:
-            log_q.put(f"  · {p.name}\n")
+        # ── Step 1: Download ──────────────────────────────────────────
+        if not skip_download and not skip_extract and not skip_normalize:
+            log_q.put("[Step 1/5] Downloading PDFs from CafeF...\n")
+            from src.downloader import run as download
+            pdf_paths = download(tickers=tickers, years=years)
+            log_q.put(f"  Downloaded {len(pdf_paths)} PDF(s)\n")
+        else:
+            log_q.put("[Step 1/5] Skipping download — using cached PDFs\n")
+            pdf_paths = None
 
-        # Step 2: Extract
-        log_q.put("\n[Step 2/5] Extracting text from PDFs...\n")
-        from src.extractor import run as extract
-        extracted = extract(pdf_paths=pdf_paths, force=True)
+        # ── Step 2: Extract ───────────────────────────────────────────
+        if not skip_extract and not skip_normalize:
+            log_q.put("\n[Step 2/5] Extracting text from PDFs...\n")
+            from src.extractor import run as extract
 
-        # Step 3: Normalize
-        log_q.put(f"\n[Step 3/5] Normalizing with Claude [{model}]...\n")
-        from src.normalizer import run as normalize
-        all_data = normalize(extracted=extracted, force=True,
-                             model=model, include_raw_lines=include_raw)
+            if pdf_paths is None:
+                pdf_paths = []
+                for ticker in tickers:
+                    for year in years:
+                        p = DATA_RAW / f"{ticker}_{year}.pdf"
+                        if p.exists():
+                            pdf_paths.append(p)
 
-        # Step 4: Export
+            extracted = extract(pdf_paths=pdf_paths or None, force=force)
+        else:
+            log_q.put("\n[Step 2/5] Skipping extraction — using cached text\n")
+            extracted = None
+
+        # ── Step 3: Normalize ─────────────────────────────────────────
+        if not skip_normalize:
+            log_q.put(f"\n[Step 3/5] Normalizing with Claude [{model}]...\n")
+            from src.normalizer import run as normalize
+            all_data = normalize(extracted=extracted, force=force,
+                                 model=model, include_raw_lines=include_raw)
+        else:
+            log_q.put("\n[Step 3/5] Skipping normalization — loading cached JSON...\n")
+            import json
+            all_data = []
+            for ticker in tickers:
+                for year in years:
+                    json_path = DATA_PROCESSED / f"{ticker}_{year}.json"
+                    if json_path.exists():
+                        all_data.append(json.loads(json_path.read_text(encoding="utf-8")))
+                    else:
+                        log_q.put(f"  ⚠ No cached JSON for {ticker}_{year}\n")
+
+        # ── Step 4: Export ────────────────────────────────────────────
         log_q.put("\n[Step 4/5] Exporting to Excel...\n")
         from src.exporter import run as export
-        filtered = [d for d in all_data if d.get("company") in tickers] if tickers else all_data
-        if not filtered:
-            result_q.put({"ok": False, "error": "No data extracted. Check your PDF filenames (must be TICKER_YEAR.pdf)."})
-            return
-        saved = export(all_data=filtered, years=years)
+        filtered = [d for d in all_data if d.get("company") in tickers]
 
-        # Step 5: Compare
+        if not filtered:
+            result_q.put({"ok": False, "error": "No data to export. Check that tickers/years are correct and CafeF has the reports."})
+            return
+
+        export(all_data=filtered, years=years)
+
+        # ── Step 5: Comparison ────────────────────────────────────────
         log_q.put("\n[Step 5/5] Building comparison workbook...\n")
         from src.comparison_exporter import build_comparison
         build_comparison(all_data=filtered, years=years)
 
         sys.stdout = old_stdout
-
-        from config import OUTPUT_DIR
         result_q.put({"ok": True, "output_dir": OUTPUT_DIR})
 
     except Exception as e:
@@ -288,29 +299,19 @@ def run_pipeline(pdf_dir, tickers, years, api_key, use_sonnet, no_raw, log_q, re
         result_q.put({"ok": False, "error": f"{e}\n\n{traceback.format_exc()}"})
 
 
-# ── Run ───────────────────────────────────────────────────────────────────────
+# ── Run ────────────────────────────────────────────────────────────────────────
 if run_button:
-    if not uploaded_files:
-        st.error("Please upload at least one PDF file named TICKER_YEAR.pdf (e.g. HPG_2023.pdf).")
+    tickers = _parse_list(tickers_input)
+    years   = _parse_years(years_input)
+
+    if not tickers:
+        st.error("Please enter at least one stock ticker (e.g. HPG, HSG).")
+        st.stop()
+    if not years:
+        st.error("Please enter at least one year (e.g. 2022, 2023).")
         st.stop()
     if not api_key_input.strip():
         st.error("Please enter your Anthropic API key.")
-        st.stop()
-
-    # Auto-detect tickers and years from filenames
-    detected_tickers, detected_years = [], []
-    for f in uploaded_files:
-        stem = Path(f.name).stem  # e.g. "HPG_2023"
-        parts = stem.rsplit("_", 1)
-        if len(parts) == 2 and parts[1].isdigit():
-            detected_tickers.append(parts[0].upper())
-            detected_years.append(int(parts[1]))
-
-    tickers = _parse_list(tickers_input) or sorted(set(detected_tickers))
-    years   = _parse_years(years_input)  or sorted(set(detected_years))
-
-    if not tickers or not years:
-        st.error("Could not detect tickers/years from filenames. Name files as TICKER_YEAR.pdf or fill in the fields manually.")
         st.stop()
 
     st.markdown(
@@ -321,12 +322,6 @@ if run_button:
         unsafe_allow_html=True,
     )
 
-    # Save uploaded PDFs to a temp directory
-    tmp_dir = tempfile.mkdtemp()
-    for f in uploaded_files:
-        dest = Path(tmp_dir) / f.name
-        dest.write_bytes(f.read())
-
     log_placeholder = st.empty()
     log_q    = queue.Queue()
     result_q = queue.Queue()
@@ -334,7 +329,9 @@ if run_button:
 
     thread = threading.Thread(
         target=run_pipeline,
-        args=(tmp_dir, tickers, years, api_key_input, use_sonnet, no_raw, log_q, result_q),
+        args=(tickers, years, api_key_input, use_sonnet, no_raw,
+              skip_download, skip_extract, skip_normalize, force,
+              log_q, result_q),
         daemon=True,
     )
     thread.start()
@@ -386,7 +383,7 @@ if run_button:
                 key="zip_all", use_container_width=True,
             )
 
-# ── Footer ────────────────────────────────────────────────────────────────────
+# ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown(
     '<p class="footer">'
