@@ -152,6 +152,35 @@ def _extract_financial_sections(text: str, window: int = 60_000) -> str:
 
     start = min(positions)
     end   = min(start + window, len(text))
+# Canonical field lists — used to null-fill missing individual values
+_IS_FIELDS = ["net_revenue","cost_of_goods","gross_profit","selling_expenses",
+               "admin_expenses","operating_profit","financial_income",
+               "financial_expense","interest_expense","other_income",
+               "pretax_profit","tax_expense","net_profit","minority_interest",
+               "parent_net_profit","ebitda","depreciation_amortization"]
+_BS_FIELDS = ["total_assets","current_assets","cash_and_equivalents",
+               "short_term_investments","accounts_receivable","inventory",
+               "non_current_assets","fixed_assets","total_liabilities",
+               "current_liabilities","short_term_debt","accounts_payable",
+               "non_current_liabilities","long_term_debt","total_debt",
+               "equity","paid_in_capital","retained_earnings"]
+_CF_FIELDS  = ["cfo","cfi","cff","capex","fcf","dividends_paid"]
+
+
+def _fill_missing_fields(data: dict) -> dict:
+    """Null-fill any canonical field that Claude omitted, keeping what it did return."""
+    sections = {
+        "income_statement": _IS_FIELDS,
+        "balance_sheet":    _BS_FIELDS,
+        "cash_flow":        _CF_FIELDS,
+    }
+    for section, fields in sections.items():
+        sec = data.setdefault(section, {})
+        for f in fields:
+            sec.setdefault(f, None)   # only fills if key is absent
+    return data
+
+
 
     found_section = text[start : start + 60].replace("\n", " ").strip()
     print(
@@ -398,31 +427,12 @@ def normalize(content, ticker: str, year: int, force: bool = False,
         return None
 
     if data is None:
-        print(f"  ⚠ All attempts failed for {ticker} {year} — inserting placeholder (N/A)")
-        data = {
-            "company": ticker,
-            "year": year,
-            "unit": "million VND",
-            "extraction_failed": True,
-            "income_statement": {
-                "net_revenue": None, "gross_profit": None, "operating_profit": None,
-                "net_profit": None, "ebitda": None,
-            },
-            "balance_sheet": {
-                "total_assets": None, "total_liabilities": None, "equity": None,
-                "cash_and_equivalents": None, "total_debt": None,
-            },
-            "cash_flow": {
-                "cfo": None, "cfi": None, "cff": None, "capex": None, "fcf": None,
-            },
-        }
+        print(f"  ✗ Normalization failed for {ticker} {year}")
+        return None
 
     data = _validate(data, ticker, year)
     cache_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    if data.get("extraction_failed"):
-        print(f"  ⚠ Placeholder saved → {cache_path.name}")
-    else:
-        print(f"  ✓ Saved → {cache_path.name}")
+    print(f"  ✓ Saved → {cache_path.name}")
     return data
 
 
