@@ -43,7 +43,16 @@ else:
 _jobs: dict[str, dict] = {}
 
 
+def _log(job_id: str, msg: str) -> None:
+    """Write a log line directly to the job store — bypasses sys.stdout entirely."""
+    for line in msg.splitlines():
+        stripped = line.rstrip()
+        if stripped:
+            _jobs[job_id]["logs"].append(stripped)
+
+
 class _LogCapture(io.TextIOBase):
+    """Also capture any library-level print() calls from pipeline modules."""
     def __init__(self, job_id: str, real_stdout):
         self._job_id = job_id
         self._real = real_stdout
@@ -71,17 +80,17 @@ def _run_pipeline(job_id: str, tickers: list[str], years: list[int]) -> None:
         from config import CLAUDE_MODEL_SONNET
         model = CLAUDE_MODEL_SONNET
 
-        print(f"  Tickers : {', '.join(tickers)}")
-        print(f"  Years   : {', '.join(str(y) for y in years)}")
-        print(f"  Model   : {model}")
+        _log(job_id, f"  Tickers : {', '.join(tickers)}")
+        _log(job_id, f"  Years   : {', '.join(str(y) for y in years)}")
+        _log(job_id, f"  Model   : {model}")
 
         # Step 1
-        print("\n[Step 1/5] Downloading PDFs from CafeF...")
+        _log(job_id, "\n[Step 1/5] Downloading PDFs from CafeF...")
         from src.downloader import run as download
         pdf_paths = download(tickers=tickers, years=years)
 
         if not pdf_paths:
-            print("  ⚠ No PDFs downloaded — checking cache in data/raw/")
+            _log(job_id, "  ⚠ No PDFs downloaded — checking cache in data/raw/")
             from config import DATA_RAW
             pdf_paths = []
             for ticker in tickers:
@@ -89,28 +98,28 @@ def _run_pipeline(job_id: str, tickers: list[str], years: list[int]) -> None:
                     p = DATA_RAW / f"{ticker}_{year}.pdf"
                     if p.exists():
                         pdf_paths.append(p)
-                        print(f"  → Found cached: {p.name}")
+                        _log(job_id, f"  → Found cached: {p.name}")
             if not pdf_paths:
                 raise RuntimeError("No PDFs found — download failed and no cached files exist.")
 
         # Step 2
-        print("\n[Step 2/5] Extracting text from PDFs...")
+        _log(job_id, "\n[Step 2/5] Extracting text from PDFs...")
         from src.extractor import run as extract
         extracted = extract(pdf_paths=pdf_paths)
         if not extracted:
             raise RuntimeError("Text extraction returned nothing.")
-        print(f"  ✓ Extracted {len(extracted)} document(s)")
+        _log(job_id, f"  ✓ Extracted {len(extracted)} document(s)")
 
         # Step 3
-        print("\n[Step 3/5] Normalizing with Claude API...")
+        _log(job_id, "\n[Step 3/5] Normalizing with Claude API...")
         from src.normalizer import run as normalize
         all_data = normalize(extracted=extracted, model=model)
         if not all_data:
             raise RuntimeError("Claude normalization returned no results — check ANTHROPIC_API_KEY.")
-        print(f"  ✓ Normalized {len(all_data)} document(s)")
+        _log(job_id, f"  ✓ Normalized {len(all_data)} document(s)")
 
         # Step 4
-        print("\n[Step 4/5] Exporting to Excel...")
+        _log(job_id, "\n[Step 4/5] Exporting to Excel...")
         from src.exporter import run as export
         filtered = [d for d in all_data if d is not None]
         saved = export(all_data=filtered, years=years)
@@ -118,7 +127,7 @@ def _run_pipeline(job_id: str, tickers: list[str], years: list[int]) -> None:
             raise RuntimeError("Exporter produced no output files.")
 
         # Step 5
-        print("\n[Step 5/5] Building comparison workbook...")
+        _log(job_id, "\n[Step 5/5] Building comparison workbook...")
         from src.comparison_exporter import build_comparison
         comp = build_comparison(all_data=filtered, years=years)
         if comp:
@@ -126,12 +135,12 @@ def _run_pipeline(job_id: str, tickers: list[str], years: list[int]) -> None:
 
         _jobs[job_id]["output_paths"] = [str(p) for p in saved]
         _jobs[job_id]["status"] = "done"
-        print(f"\n✓ Complete — {len(saved)} workbook(s) exported.")
+        _log(job_id, f"\n✓ Complete — {len(saved)} workbook(s) exported.")
 
     except Exception as exc:
         _jobs[job_id]["status"] = "error"
         _jobs[job_id]["error"] = str(exc)
-        print(f"\n✗ Pipeline failed: {exc}")
+        _log(job_id, f"\n✗ Pipeline failed: {exc}")
     finally:
         sys.stdout = real_stdout
 
@@ -158,7 +167,7 @@ def start_run(req: RunRequest):
         raise HTTPException(422, "At least one valid year required.")
 
     job_id = str(uuid.uuid4())
-    _jobs[job_id] = {"status": "running", "logs": [], "output_paths": [], "error": None}
+    _jobs[job_id] = {"status": "running", "logs": [f"Starting pipeline for {', '.join(tickers)} · {', '.join(str(y) for y in years)}..."], "output_paths": [], "error": None}
     threading.Thread(target=_run_pipeline, args=(job_id, tickers, years), daemon=True).start()
     return {"job_id": job_id}
 
