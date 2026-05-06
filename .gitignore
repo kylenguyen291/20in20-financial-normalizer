@@ -1,5 +1,4 @@
 .env
-api_key.txt
 data/raw/
 data/processed/
 output/
