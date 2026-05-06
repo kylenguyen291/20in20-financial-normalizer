@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 # ── Install Playwright Chromium once (required on Streamlit Cloud) ─────────────
 @st.cache_resource(show_spinner=False)
 def _install_playwright():
-    subprocess.run(["playwright", "install", "chromium"], check=False)
+    subprocess.run(["playwright", "install", "--with-deps", "chromium"], check=False)
 
 _install_playwright()
 
