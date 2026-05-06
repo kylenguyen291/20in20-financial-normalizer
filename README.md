@@ -121,10 +121,20 @@ financial-normalizer/
 ├── config.py                # Constants (model, paths, sheet names)
 ├── requirements.txt
 ├── Dockerfile
+├── docker-compose.yml       # Local multi-service compose (API + web)
 ├── railway.toml
+├── supervisord.conf         # Process manager config (used inside Docker)
+│
+├── api/                     # FastAPI backend (job queue, SSE log streaming)
+│   ├── main.py              # API router — /run, /status, /download endpoints
+│   └── job_runner.py        # Background job executor
+│
+├── web/                     # Next.js frontend (TypeScript)
+│   ├── app/                 # App router pages & layouts
+│   └── ...                  # Standard Next.js project files
 │
 ├── static/
-│   └── index.html           # Self-contained frontend (no build step)
+│   └── index.html           # Standalone HTML frontend (no build step)
 │
 ├── src/
 │   ├── downloader.py        # Downloads PDFs from CafeF via Playwright
