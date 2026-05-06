@@ -173,20 +173,15 @@ def start_run(req: RunRequest):
 
 
 @app.get("/api/status/{job_id}")
-def poll_status(job_id: str, from_: int = 0):
-    """
-    Polling endpoint — returns new log lines since index `from_`.
-    Frontend calls this every second instead of using SSE.
-    Works through all proxies/CDNs without buffering issues.
-    """
+def poll_status(job_id: str, offset: int = 0):
     job = _jobs.get(job_id)
     if not job:
         raise HTTPException(404, "Job not found.")
     logs = job["logs"]
-    new_lines = logs[from_:]
+    new_lines = logs[offset:]
     return {
         "lines": new_lines,
-        "next": from_ + len(new_lines),
+        "next": offset + len(new_lines),
         "status": job["status"],
         "output_paths": job.get("output_paths", []),
         "error": job.get("error"),
@@ -214,4 +209,8 @@ def download_file(job_id: str, index: int = 0):
 # ── Frontend ──────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return HTMLResponse(open(ROOT / "static" / "index.html", encoding="utf-8").read())
+    html = open(ROOT / "static" / "index.html", encoding="utf-8").read()
+    return HTMLResponse(
+        html,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+    )

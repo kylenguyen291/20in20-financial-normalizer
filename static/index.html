@@ -245,7 +245,7 @@ function streamLogs(jobId, tickers, years) {
 
   async function poll() {
     try {
-      const res = await fetch(`/api/status/${jobId}?from_=${cursor}`);
+      const res = await fetch(`/api/status/${jobId}?offset=${cursor}`);
       if (!res.ok) throw new Error('HTTP '+res.status);
       const data = await res.json();
 
