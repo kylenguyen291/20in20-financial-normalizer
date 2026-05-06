@@ -30,8 +30,8 @@ A Python pipeline that automatically downloads, extracts, and normalizes Vietnam
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/financial-normalizer.git
-cd financial-normalizer
+git clone https://github.com/kylenguyen291/20in20-financial-normalizer.git
+cd 20in20-financial-normalizer
 ```
 
 ### 2. Create and activate a virtual environment
