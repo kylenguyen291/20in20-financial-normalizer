@@ -154,6 +154,53 @@ financial-normalizer/
 
 ---
 
+## Running `main.py` Locally (CLI)
+
+If you prefer to run the pipeline directly from the terminal without the web interface:
+
+```bash
+python main.py
+```
+
+You will be prompted interactively:
+
+```
+How many years? → 3
+Year 1: 2023
+Year 2: 2024
+Year 3: 2025
+Ticker (blank to finish): HPG
+Ticker (blank to finish): VIC
+Ticker (blank to finish):
+```
+
+The pipeline runs all five steps and saves Excel files to `output/`.
+
+### CLI flags
+
+| Flag | Description |
+|---|---|
+| `--skip-download` | Use existing PDFs in `data/raw/` — skip download |
+| `--skip-extract` | Use cached `.txt` files in `data/processed/` — skip extraction |
+| `--skip-normalize` | Use cached `.json` files — re-export only |
+| `--force` | Ignore all caches and re-run every step from scratch |
+| `--use-sonnet` | Force Claude Sonnet model |
+| `--no-raw-lines` | Omit raw line items from JSON (reduces token usage) |
+
+**Example — re-export without re-downloading or re-calling Claude:**
+
+```bash
+python main.py --skip-download --skip-extract --skip-normalize
+```
+
+**Example — force a full fresh run:**
+
+```bash
+python main.py --force --use-sonnet
+```
+
+---
+
 ## License
 
 MIT
