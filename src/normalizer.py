@@ -192,7 +192,7 @@ def _fill_missing_fields(data: dict) -> dict:
     return text[start:end]
 
 
-def _call_text(client, text: str, ticker: str, year: int, retries: int = 6,
+def _call_text(client, text: str, ticker: str, year: int, retries: int = 4,
                model: str = CLAUDE_MODEL, include_raw_lines: bool = True) -> dict | None:
     """Claude call for digital PDFs (text input)."""
     SECTION_WINDOW = 60_000   # chars to send after the first financial section header
@@ -251,7 +251,7 @@ def _call_text(client, text: str, ticker: str, year: int, retries: int = 6,
     return None
 
 
-def _call_vision(client, images: list[dict], ticker: str, year: int, retries: int = 6,
+def _call_vision(client, images: list[dict], ticker: str, year: int, retries: int = 4,
                  model: str = CLAUDE_MODEL, include_raw_lines: bool = True) -> dict | None:
     """Claude vision call for scanned PDFs (image input)."""
 
