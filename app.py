@@ -30,8 +30,14 @@ if str(ROOT) not in sys.path:
 app = FastAPI(title="Financial Normalizer")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# Serve the static/ directory
-app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+# Serve the static/ directory (fault-tolerant in case path differs)
+_static_dir = ROOT / "static"
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+    print(f"[startup] Serving static files from {_static_dir}")
+else:
+    print(f"[startup] WARNING: static/ directory not found at {_static_dir}")
+
 
 # ── In-memory job store ───────────────────────────────────────────────────────
 _jobs: dict[str, dict] = {}
