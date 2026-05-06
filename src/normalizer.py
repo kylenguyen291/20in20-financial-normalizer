@@ -37,8 +37,22 @@ _NO_RAW_LINES_NOTE = (
 )
 
 
+import re
+
+def _clean_json(raw: str) -> str:
+    """Remove common Claude JSON artifacts that break the parser."""
+    # Remove JavaScript-style comments (// ... and /* ... */)
+    raw = re.sub(r'//[^\n]*', '', raw)
+    raw = re.sub(r'/\*.*?\*/', '', raw, flags=re.DOTALL)
+    # Remove ellipsis placeholders used inside arrays (e.g. ..., or ...)
+    raw = re.sub(r'\.\.\.\s*,?', '', raw)
+    # Remove trailing commas before closing brackets/braces
+    raw = re.sub(r',\s*([}\]])', r'\1', raw)
+    return raw.strip()
+
+
 def _parse_response(raw: str) -> dict | None:
-    """Parse Claude's response, stripping markdown fences if present."""
+    """Parse Claude's response, stripping markdown fences and cleaning artifacts."""
     raw = raw.strip()
     if raw.startswith("```"):
         parts = raw.split("```")
@@ -46,15 +60,27 @@ def _parse_response(raw: str) -> dict | None:
         if raw.startswith("json"):
             raw = raw[4:]
         raw = raw.strip()
+
+    raw = _clean_json(raw)
+
+    # Try raw_decode first (stops at first complete JSON object)
     try:
-        # Use raw_decode so trailing text after the JSON object is ignored.
-        # json.loads() raises "Extra data" when Claude appends an explanation
-        # after the closing brace; raw_decode stops at the first complete object.
         obj, _ = json.JSONDecoder().raw_decode(raw)
         return obj
-    except json.JSONDecodeError as e:
-        print(f"    ✗ JSON parse error: {e}")
-        return None
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: extract the outermost {...} block with regex
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if match:
+        try:
+            obj, _ = json.JSONDecoder().raw_decode(match.group(0))
+            return obj
+        except json.JSONDecodeError as e:
+            print(f"    ✗ JSON parse error (after cleanup): {e}")
+    else:
+        print(f"    ✗ No JSON object found in response")
+    return None
 
 
 def _extract_financial_sections(text: str, window: int = 60_000) -> str:
@@ -200,11 +226,14 @@ def _call_vision(client, images: list[dict], ticker: str, year: int, retries: in
                  model: str = CLAUDE_MODEL, include_raw_lines: bool = True) -> dict | None:
     """Claude vision call for scanned PDFs (image input)."""
 
-    # Claude supports up to 20 images per request — use first 20 pages.
-    # At 72 DPI each page is ~660×935 px ≈ 820 tokens; 20 pages ≈ 16k input tokens.
-    batch = images[:20]
-    if len(images) > 20:
-        print(f"    ⚠ Using first 20 of {len(images)} pages")
+    # Skip first 3 cover pages; send up to 20 pages from the substantive content.
+    # Financial tables in a 25-page report are typically in the latter half.
+    skip = 3 if len(images) > 10 else 0
+    batch = images[skip:skip + 20]
+    if len(images) > 10:
+        print(f"    → Skipping first {skip} cover pages, sending pages {skip+1}–{skip+len(batch)}")
+    if len(images) > skip + 20:
+        print(f"    ⚠ Using {len(batch)} of {len(images)} pages (pages {skip+1}–{skip+len(batch)})")
 
     vision_text = (
         f"Company ticker: {ticker}\n"
