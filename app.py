@@ -209,6 +209,23 @@ def download_file(job_id: str, index: int = 0):
                         filename=path.name)
 
 
+@app.get("/api/debug")
+def debug():
+    """Shows current job state — for diagnosis only."""
+    return {
+        "job_count": len(_jobs),
+        "jobs": {
+            k: {
+                "status": v["status"],
+                "log_count": len(v["logs"]),
+                "first_logs": v["logs"][:3],
+                "error": v.get("error"),
+            }
+            for k, v in _jobs.items()
+        },
+    }
+
+
 # ── Frontend ──────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 def index():
