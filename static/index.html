@@ -60,9 +60,75 @@ button:disabled{opacity:0.6;cursor:not-allowed}
 .result-dl:hover{background:rgba(201,168,76,0.22)}
 .fail-card{padding:1rem 1.2rem;background:rgba(224,112,112,0.08);border:1px solid rgba(224,112,112,0.2);border-radius:8px;color:var(--red);font-size:0.82rem;font-family:'Courier New',monospace}
 .section-title{font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;color:var(--gray);margin-bottom:0.75rem}
+
+/* ── Onboarding Modal ────────────────────────────────────────────────────── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(7,14,25,0.82);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;animation:fadeIn .35s forwards}
+@keyframes fadeIn{to{opacity:1}}
+.modal{background:linear-gradient(160deg,var(--navy2) 0%,var(--navy3) 100%);border:1px solid rgba(201,168,76,0.18);border-radius:16px;max-width:520px;width:100%;padding:2.5rem 2rem 2rem;position:relative;transform:translateY(20px);animation:slideUp .35s .05s forwards;opacity:0}
+@keyframes slideUp{to{transform:translateY(0);opacity:1}}
+.modal-badge{display:inline-flex;align-items:center;gap:0.4rem;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);border-radius:50px;padding:0.25rem 0.75rem;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:1.1rem}
+.modal h2{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--bone);margin-bottom:0.5rem;line-height:1.25}
+.modal-sub{font-size:0.82rem;color:rgba(245,240,232,0.55);margin-bottom:1.75rem;line-height:1.6}
+.steps-grid{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.75rem}
+.step-card{display:flex;gap:1rem;align-items:flex-start;background:rgba(255,255,255,0.03);border:1px solid rgba(245,240,232,0.07);border-radius:10px;padding:0.9rem 1rem}
+.step-num{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8B6914,var(--gold));color:#0D1B2A;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step-text strong{display:block;font-size:0.82rem;font-weight:600;color:var(--bone);margin-bottom:0.2rem}
+.step-text span{font-size:0.76rem;color:rgba(245,240,232,0.5);line-height:1.5}
+.modal-tip{font-size:0.72rem;color:rgba(245,240,232,0.35);background:rgba(255,255,255,0.03);border:1px solid rgba(245,240,232,0.06);border-radius:8px;padding:0.65rem 0.9rem;margin-bottom:1.5rem;line-height:1.55}
+.modal-tip strong{color:rgba(245,240,232,0.6)}
+.modal-cta{width:100%;padding:0.9rem;background:linear-gradient(135deg,#8B6914,var(--gold));color:#0D1B2A;font-weight:700;font-size:0.82rem;letter-spacing:0.12em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .15s}
+.modal-cta:hover{opacity:0.88;transform:translateY(-1px)}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:rgba(245,240,232,0.3);font-size:1.1rem;cursor:pointer;padding:0.25rem;line-height:1;width:auto;transition:color .2s}
+.modal-close:hover{color:rgba(245,240,232,0.7)}
+/* Help button */
+.help-btn{position:fixed;bottom:1.5rem;right:1.5rem;width:38px;height:38px;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;z-index:500;font-family:inherit}
+.help-btn:hover{background:rgba(201,168,76,0.2);transform:scale(1.08)}
 </style>
 </head>
 <body>
+
+<!-- ── Onboarding Modal ──────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <button class="modal-close" onclick="closeOnboarding()" aria-label="Close">✕</button>
+    <div class="modal-badge">✦ Quick Start</div>
+    <h2 id="modal-title">How to use this tool</h2>
+    <p class="modal-sub">Automatically download, extract, and normalize Vietnamese financial statements into clean Excel workbooks — in minutes.</p>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <strong>Enter stock tickers</strong>
+          <span>Type a Vietnamese stock ticker (e.g. <code style="color:var(--gold2)">HPG</code>, <code style="color:var(--gold2)">VNM</code>, <code style="color:var(--gold2)">FPT</code>) and press <kbd style="background:rgba(255,255,255,0.07);border-radius:3px;padding:0 4px">Enter</kbd> to add it. You can add multiple tickers at once.</span>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <strong>Choose fiscal years</strong>
+          <span>Enter one or more years separated by commas (e.g. <code style="color:var(--gold2)">2023, 2024</code>). The pipeline will fetch annual reports for each year you specify.</span>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <strong>Download your Excel workbooks</strong>
+          <span>Click <strong style="color:var(--bone)">Run Pipeline</strong>. The tool downloads PDFs, extracts data with Claude AI, and exports normalized Excel files you can download directly.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-tip">
+      <strong>⏱ Heads up:</strong> Processing typically takes <strong>2–5 minutes</strong> per ticker/year pair. Keep this tab open and watch the live log for real-time progress.
+    </div>
+
+    <button class="modal-cta" id="modal-cta-btn" onclick="closeOnboarding()">Got it — Let's go →</button>
+  </div>
+</div>
+
+<!-- ── Help button (re-opens modal) ──────────────────────────────────────── -->
+<button class="help-btn" id="help-btn" onclick="openOnboarding()" aria-label="Open instructions" title="How to use">?</button>
 
 <main>
   <h1>Vietnamese Financial<br>Statement Normalizer</h1>
@@ -298,6 +364,33 @@ function reset(){
   document.getElementById('form-section').style.display='block';
   logLines=[]; jobId=null;
 }
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+function closeOnboarding() {
+  const modal = document.getElementById('onboarding-modal');
+  modal.style.opacity = '0';
+  modal.style.transition = 'opacity .25s';
+  setTimeout(() => { modal.style.display = 'none'; }, 260);
+  try { localStorage.setItem('fn_onboarded', '1'); } catch(e) {}
+}
+function openOnboarding() {
+  const modal = document.getElementById('onboarding-modal');
+  modal.style.display = 'flex';
+  modal.style.opacity = '0';
+  modal.style.transition = '';
+  requestAnimationFrame(() => {
+    modal.style.transition = 'opacity .25s';
+    modal.style.opacity = '1';
+  });
+}
+// Auto-show on first visit
+(function() {
+  try {
+    if (localStorage.getItem('fn_onboarded')) {
+      document.getElementById('onboarding-modal').style.display = 'none';
+    }
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
