@@ -1,0 +1,427 @@
+/* ──────────────────────────────────────────────────────────────
+   20in20 Partners — Financial Normalizer Design System
+   Brand: Deep navy · Bone white · Antique gold · Serif headers
+   ────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Tokens ── */
+:root {
+  --navy-900:   #0F2340;
+  --navy-800:   #162D50;
+  --navy-700:   #1C3761;
+  --navy-600:   #234373;
+  --navy-500:   #2A4F85;
+
+  --gold-500:   #8B6914;
+  --gold-400:   #A07C1A;
+  --gold-300:   #C9A84C;
+  --gold-200:   #D4B96A;
+  --gold-100:   #EDD9A3;
+
+  --bone:       #F5F0E8;
+  --bone-dim:   rgba(245, 240, 232, 0.65);
+  --white:      #FFFFFF;
+
+  --red:        #D9534F;
+  --green:      #4A9B6F;
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans:  'Inter', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  10px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { color-scheme: dark; height: 100%; }
+
+body {
+  min-height: 100%;
+  background-color: var(--navy-800);
+  color: var(--bone);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+
+  /* Subtle radial vignette from top-left like the brand site */
+  background-image:
+    radial-gradient(ellipse 120% 80% at 0% 0%, rgba(15, 35, 64, 0.9) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 100% 100%, rgba(10, 25, 50, 0.6) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ──────────────────────────────────────────
+   Page Layout
+   ────────────────────────────────────────── */
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1.5rem 5rem;
+}
+
+/* ──────────────────────────────────────────
+   Top Bar  (brand logo strip)
+   ────────────────────────────────────────── */
+.topbar {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 0 0;
+  margin-bottom: 0;
+}
+
+.topbar-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-mark {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.01em;
+}
+.logo-mark span {
+  color: var(--gold-300);
+}
+
+.logo-sub {
+  font-family: var(--font-sans);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: var(--bone-dim);
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.topbar-tool {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  border: 1px solid rgba(245,240,232,0.15);
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+}
+
+/* ──────────────────────────────────────────
+   Hero
+   ────────────────────────────────────────── */
+.hero {
+  width: 100%;
+  max-width: 720px;
+  padding: 5rem 0 3.5rem;
+}
+
+.hero-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-300);
+  margin-bottom: 1.25rem;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+.hero-sub {
+  font-size: 1rem;
+  color: var(--bone-dim);
+  max-width: 520px;
+  line-height: 1.7;
+}
+
+/* ──────────────────────────────────────────
+   Form Card
+   ────────────────────────────────────────── */
+.form-card {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(15, 35, 64, 0.55);
+  border: 1px solid rgba(245, 240, 232, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem 2.5rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ──────────────────────────────────────────
+   Fields
+   ────────────────────────────────────────── */
+.field {
+  margin-bottom: 1.5rem;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  margin-bottom: 0.6rem;
+}
+
+.field-hint {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: rgba(245,240,232,0.35);
+}
+
+.field-hint-parsed {
+  color: var(--gold-300);
+  margin-left: 0.4rem;
+}
+
+/* Text input */
+.text-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(245,240,232,0.18);
+  border-radius: var(--radius-md);
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  padding: 0.7rem 1rem;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s;
+}
+.text-input::placeholder { color: rgba(245,240,232,0.25); }
+.text-input:focus {
+  border-color: var(--gold-300);
+  background: rgba(255,255,255,0.07);
+}
+.text-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Chip (ticker pill) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(139, 105, 20, 0.2);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  color: var(--gold-200);
+  transition: all 0.15s;
+}
+.chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(201, 168, 76, 0.6);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.chip button:hover { color: var(--red); }
+
+/* ──────────────────────────────────────────
+   Primary CTA button  (gold, all-caps serif)
+   ────────────────────────────────────────── */
+.btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.85rem 2rem;
+  background: var(--gold-500);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
+  box-shadow: 0 2px 12px rgba(139, 105, 20, 0.35);
+}
+.btn-cta:hover:not(:disabled) {
+  background: var(--gold-400);
+  box-shadow: 0 4px 20px rgba(139, 105, 20, 0.5);
+  transform: translateY(-1px);
+}
+.btn-cta:active:not(:disabled) { transform: translateY(0); }
+.btn-cta:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Ghost button */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 1.5rem;
+  background: transparent;
+  color: var(--bone-dim);
+  border: 1px solid rgba(245,240,232,0.2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-ghost:hover {
+  color: var(--white);
+  border-color: rgba(245,240,232,0.4);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ──────────────────────────────────────────
+   Console
+   ────────────────────────────────────────── */
+.console-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+}
+
+.console-meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: rgba(245,240,232,0.25);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.console {
+  background: rgba(5, 15, 35, 0.8);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  min-height: 240px;
+  max-height: 360px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.79rem;
+  line-height: 1.75;
+  scroll-behavior: smooth;
+}
+.console::-webkit-scrollbar { width: 4px; }
+.console::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.console-line { display: flex; gap: 0.5rem; align-items: flex-start; }
+.console-line .ts  { color: rgba(245,240,232,0.2); flex-shrink: 0; }
+.console-line .msg { color: var(--bone-dim); word-break: break-word; }
+.console-line.success .msg { color: #6BBF88; }
+.console-line.error   .msg { color: #E07070; }
+.console-line.warn    .msg { color: var(--gold-200); }
+.console-line.step    .msg { color: var(--gold-300); font-weight: 600; }
+
+/* ──────────────────────────────────────────
+   Misc atoms
+   ────────────────────────────────────────── */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(245,240,232,0.08);
+  margin: 1.5rem 0;
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Pulse dot */
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.pulse-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Error msg */
+.error-msg {
+  margin-bottom: 0.75rem;
+  font-size: 0.84rem;
+  color: #E07070;
+  padding: 0.5rem 0.85rem;
+  background: rgba(217,83,79,0.08);
+  border: 1px solid rgba(217,83,79,0.2);
+  border-radius: var(--radius-sm);
+}
+
+/* ──────────────────────────────────────────
+   Footer
+   ────────────────────────────────────────── */
+.page-footer {
+  margin-top: 3rem;
+  font-size: 0.75rem;
+  color: rgba(245,240,232,0.25);
+  text-align: center;
+  line-height: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.footer-link {
+  color: rgba(245,240,232,0.3);
+  transition: color 0.15s;
+}
+.footer-link:hover { color: var(--gold-300); }
+
+/* ──────────────────────────────────────────
+   Scrollbar global
+   ────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }

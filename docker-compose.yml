@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: .
+      target: python-builder
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+
+  web:
+    image: node:20-slim
+    working_dir: /web
+    command: sh -c "npm install && npm run dev"
+    volumes:
+      - ./web:/web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api

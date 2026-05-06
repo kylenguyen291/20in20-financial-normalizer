@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Financial Normalizer — 20in20 Partners</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#0D1B2A;--navy2:#162032;--navy3:#1E2D40;--gold:#C9A84C;--gold2:#E8C875;--bone:#F5F0E8;--green:#6BBF88;--red:#E07070;--gray:rgba(245,240,232,0.4)}
+body{background:var(--navy);color:var(--bone);font-family:'Inter',sans-serif;min-height:100vh}
+
+main{max-width:680px;margin:0 auto;padding:3rem 1.5rem}
+h1{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--bone);margin-bottom:0.5rem}
+.sub{font-size:0.9rem;color:var(--gray);margin-bottom:2.5rem;line-height:1.6}
+label{display:block;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray);margin-bottom:0.5rem;font-weight:600}
+.tag-wrap{display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.12);border-radius:8px;cursor:text;min-height:48px;align-items:center}
+.tag{background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.4);color:var(--gold2);border-radius:50px;padding:0.2rem 0.7rem;font-size:0.8rem;font-weight:600;letter-spacing:0.06em;cursor:default;user-select:none}
+.tag-input{background:none;border:none;outline:none;color:var(--bone);font-size:0.85rem;font-family:inherit;min-width:80px;flex:1}
+.hint{font-size:0.72rem;color:var(--gray);margin-top:0.4rem;margin-bottom:1.4rem}
+input[type=text]{width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.12);border-radius:8px;color:var(--bone);font-size:0.9rem;font-family:inherit;outline:none}
+input[type=text]:focus{border-color:rgba(201,168,76,0.4)}
+hr{border:none;border-top:1px solid rgba(245,240,232,0.07);margin:1.5rem 0}
+btn,button{display:flex;align-items:center;justify-content:center;gap:0.6rem;width:100%;padding:1rem;background:linear-gradient(135deg,#8B6914,var(--gold));color:#0D1B2A;font-weight:700;font-size:0.85rem;letter-spacing:0.12em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:opacity .2s,transform .15s;font-family:inherit}
+button:hover:not(:disabled){opacity:0.88;transform:translateY(-1px)}
+button:disabled{opacity:0.6;cursor:not-allowed}
+.spinner{width:14px;height:14px;border:2px solid rgba(13,27,42,0.3);border-top-color:#0D1B2A;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:var(--red);font-size:0.82rem;margin-top:0.75rem;padding:0.6rem 0.9rem;background:rgba(224,112,112,0.08);border-radius:6px;border:1px solid rgba(224,112,112,0.2)}
+/* Progress */
+.prog-wrap{margin-bottom:1.2rem}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:0.45rem}
+.prog-label{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);font-weight:600}
+.prog-pct{font-size:0.85rem;font-weight:700;font-variant-numeric:tabular-nums;transition:color .3s}
+.prog-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden}
+.prog-bar{height:100%;border-radius:999px;background:linear-gradient(90deg,#8B6914,var(--gold));transition:width .6s ease,background .4s;background-size:200% 100%;animation:shimmer 2s linear infinite}
+.prog-bar.done{background:linear-gradient(90deg,#27AE60,var(--green));animation:none}
+.prog-bar.fail{background:linear-gradient(90deg,#C0392B,var(--red));animation:none}
+@keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+
+/* Console */
+.console-wrap{margin-bottom:1.5rem}
+.console-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.console-title{display:flex;align-items:center;gap:0.5rem;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
+.console-meta{font-size:0.72rem;color:var(--gray)}
+.console{font-family:'Courier New',monospace;font-size:0.75rem;line-height:1.6;background:rgba(0,0,0,0.25);border:1px solid rgba(245,240,232,0.07);border-radius:8px;padding:1rem;height:280px;overflow-y:auto;color:rgba(245,240,232,0.75)}
+.console .step{color:var(--gold2);font-weight:600}
+.console .success{color:var(--green)}
+.console .error{color:var(--red)}
+.console .warn{color:#E8B875}
+.console .ts{color:rgba(245,240,232,0.2);margin-right:0.6rem}
+.console .placeholder{color:rgba(245,240,232,0.2);font-style:italic}
+/* Results */
+.results{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.5rem}
+.result-card{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;background:rgba(255,255,255,0.03);border:1px solid rgba(245,240,232,0.1);border-radius:8px}
+.result-name{font-size:0.85rem;font-weight:600;color:var(--bone)}
+.result-dl{padding:0.4rem 1rem;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);border-radius:6px;color:var(--gold2);font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:none;transition:background .2s}
+.result-dl:hover{background:rgba(201,168,76,0.22)}
+.fail-card{padding:1rem 1.2rem;background:rgba(224,112,112,0.08);border:1px solid rgba(224,112,112,0.2);border-radius:8px;color:var(--red);font-size:0.82rem;font-family:'Courier New',monospace}
+.section-title{font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;color:var(--gray);margin-bottom:0.75rem}
+</style>
+</head>
+<body>
+
+<main>
+  <h1>Vietnamese Financial<br>Statement Normalizer</h1>
+  <p class="sub">Enter stock tickers and fiscal years to automatically download, extract, and normalize financial statements into structured Excel workbooks.</p>
+
+  <!-- Form -->
+  <div id="form-section">
+    <label>Stock Tickers</label>
+    <div class="tag-wrap" id="tag-wrap">
+      <input class="tag-input" id="ticker-input" placeholder="Type ticker + Enter (e.g. HPG)" autocomplete="off"/>
+    </div>
+    <p class="hint">Press Enter or comma to add · Backspace to remove last</p>
+
+    <label>Fiscal Years</label>
+    <input type="text" id="years-input" placeholder="2025, 2024, 2023" value=""/>
+    <p class="hint">Comma-separated · any year(s) you need</p>
+
+    <hr/>
+    <div id="submit-err" class="err" style="display:none"></div>
+    <button id="run-btn" onclick="startRun()">Run Pipeline</button>
+  </div>
+
+  <!-- Running state -->
+  <div id="run-section" style="display:none">
+    <div class="console-wrap">
+      <div class="console-header">
+        <div class="console-title"><span class="live-dot"></span>Live Output</div>
+        <span class="console-meta" id="run-meta"></span>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-header">
+          <span class="prog-label">Pipeline Progress</span>
+          <span class="prog-pct" id="prog-pct" style="color:var(--gold)">0%</span>
+        </div>
+        <div class="prog-track"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="console" id="console-out"><span class="placeholder">Starting pipeline — output will appear here momentarily…</span></div>
+    </div>
+  </div>
+
+  <!-- Done state -->
+  <div id="done-section" style="display:none">
+    <p class="section-title">Results</p>
+    <div class="results" id="results-list"></div>
+    <button onclick="reset()" style="margin-top:0.5rem">↺ Run Again</button>
+  </div>
+</main>
+
+<script>
+const STEPS = [
+  {id:1,label:"Downloading PDFs"},
+  {id:2,label:"Extracting text"},
+  {id:3,label:"Normalizing (Claude)"},
+  {id:4,label:"Exporting to Excel"},
+  {id:5,label:"Comparison workbook"}
+];
+const STEP_RANGES = {1:[0,15],2:[15,25],3:[25,80],4:[80,90],5:[90,100]};
+
+let tickers = [];
+let jobId = null;
+let logLines = [];
+let totalDocs = 1;
+
+// ── Ticker tag input ──────────────────────────────────────────────────────────
+const tickerInput = document.getElementById('ticker-input');
+const tagWrap = document.getElementById('tag-wrap');
+
+function addTicker(val) {
+  val = val.trim().toUpperCase().replace(/,/g,'');
+  if (!val || tickers.includes(val)) return;
+  tickers.push(val);
+  renderTags();
+}
+function removeLast() {
+  if (tickerInput.value === '' && tickers.length) {
+    tickers.pop(); renderTags();
+  }
+}
+function renderTags() {
+  document.querySelectorAll('.tag').forEach(t=>t.remove());
+  tickers.forEach(t=>{
+    const span = document.createElement('span');
+    span.className='tag'; span.textContent=t;
+    tagWrap.insertBefore(span, tickerInput);
+  });
+}
+tickerInput.addEventListener('keydown', e=>{
+  if (e.key==='Enter'||e.key===','){e.preventDefault();addTicker(tickerInput.value);tickerInput.value='';}
+  if (e.key==='Backspace') removeLast();
+});
+tickerInput.addEventListener('blur', ()=>{if(tickerInput.value.trim()){addTicker(tickerInput.value);tickerInput.value='';}});
+tagWrap.addEventListener('click',()=>tickerInput.focus());
+
+
+
+// ── Progress ──────────────────────────────────────────────────────────────────
+function computeProgress(lines, isDone, hasError) {
+  if(isDone) return 100;
+  if(hasError) return currentStepFromLines(lines) ? STEP_RANGES[currentStepFromLines(lines)][0] : 0;
+  const cs = currentStepFromLines(lines);
+  if(!cs) return 0;
+  const [start,end]=STEP_RANGES[cs];
+  if(cs===3){
+    const docsNorm = lines.filter(l=>/✓ Saved →|→ Using cached JSON:/.test(l.msg)).length;
+    return start + Math.min(docsNorm/totalDocs,1)*(end-start);
+  }
+  const nextSeen = lines.some(l=>{ const m=l.msg.match(/\[Step (\d)\/5\]/); return m&&parseInt(m[1])>cs; });
+  return nextSeen ? end : start+(end-start)*0.5;
+}
+function currentStepFromLines(lines) {
+  let s=0;
+  lines.forEach(l=>{ const m=l.msg.match(/\[Step (\d)\/5\]/); if(m&&parseInt(m[1])>s) s=parseInt(m[1]); });
+  return s;
+}
+
+function updateProgress(isDone, hasError) {
+  const pct = computeProgress(logLines, isDone, hasError);
+  document.getElementById('prog-pct').textContent = isDone?'Complete':hasError?'Failed':Math.round(pct)+'%';
+  document.getElementById('prog-pct').style.color = hasError?'var(--red)':isDone?'var(--green)':'var(--gold)';
+  const bar = document.getElementById('prog-bar');
+  bar.style.width = pct+'%';
+  bar.className = 'prog-bar'+(isDone?' done':hasError?' fail':'');
+
+}
+
+// ── Console ───────────────────────────────────────────────────────────────────
+function appendLog(msg) {
+  const consoleEl = document.getElementById('console-out');
+  const placeholder = consoleEl.querySelector('.placeholder');
+  if(placeholder) placeholder.remove();
+  let kind='';
+  if(/^\[Step/.test(msg)) kind='step';
+  else if(/^✓|✓ Complete/i.test(msg)) kind='success';
+  else if(/^✗|^error|failed|RuntimeError/i.test(msg)) kind='error';
+  else if(/^⚠|warn/i.test(msg)) kind='warn';
+  const now=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const line=document.createElement('div');
+  line.className=kind;
+  line.innerHTML=`<span class="ts">${now}</span><span class="msg">${escHtml(msg)}</span>`;
+  consoleEl.appendChild(line);
+  consoleEl.scrollTop=consoleEl.scrollHeight;
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Main run ──────────────────────────────────────────────────────────────────
+async function startRun() {
+  const yearsRaw = document.getElementById('years-input').value;
+  const years = yearsRaw.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1990&&n<=2100);
+  const errEl = document.getElementById('submit-err');
+  errEl.style.display='none';
+  if(!tickers.length){errEl.textContent='Add at least one ticker.';errEl.style.display='block';return;}
+  if(!years.length){errEl.textContent='Enter at least one valid year.';errEl.style.display='block';return;}
+
+  totalDocs = tickers.length * years.length;
+  logLines = [];
+  document.getElementById('run-meta').textContent = tickers.join(', ')+' · '+years.join(', ');
+  document.getElementById('console-out').innerHTML='<span class="placeholder">Starting pipeline — output will appear here momentarily…</span>';
+  document.getElementById('form-section').style.display='none';
+  document.getElementById('run-section').style.display='block';
+  document.getElementById('done-section').style.display='none';
+  renderSteps(1, false);
+
+  try {
+    const res = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tickers,years})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||'HTTP '+res.status);}
+    const {job_id} = await res.json();
+    jobId = job_id;
+    streamLogs(job_id, tickers, years);
+  } catch(e) {
+    errEl.textContent='Failed to start: '+e.message; errEl.style.display='block';
+    document.getElementById('form-section').style.display='block';
+    document.getElementById('run-section').style.display='none';
+  }
+}
+
+function streamLogs(jobId, tickers, years) {
+  const es = new EventSource('/api/logs/'+jobId);
+  es.onmessage = e => {
+    try {
+      const p = JSON.parse(e.data);
+      if(p.type==='log'){
+        logLines.push({msg:p.message});
+        appendLog(p.message);
+        updateProgress(false, false);
+      }
+      if(p.type==='complete'){
+        es.close();
+        const hasError = p.status==='error';
+        updateProgress(p.status==='done', hasError);
+        showResults(p, tickers, years, hasError);
+      }
+    } catch{}
+  };
+  es.onerror = ()=>{es.close();appendLog('✗ Connection lost — check backend.');updateProgress(false,true);};
+}
+
+function showResults(p, tickers, years, hasError) {
+  document.getElementById('run-section').style.display='none';
+  document.getElementById('done-section').style.display='block';
+  const list = document.getElementById('results-list');
+  list.innerHTML='';
+  if(hasError){
+    const card=document.createElement('div');card.className='fail-card';
+    card.innerHTML='<strong>Pipeline failed</strong><br>'+escHtml(p.error||'Unknown error');
+    list.appendChild(card);
+  } else {
+    (p.output_paths||[]).forEach((path,i)=>{
+      const name=path.split('/').pop();
+      const card=document.createElement('div');card.className='result-card';
+      card.innerHTML=`<span class="result-name">📊 ${escHtml(name)}</span><a class="result-dl" href="/api/download/${jobId}?index=${i}" download="${escHtml(name)}">Download</a>`;
+      list.appendChild(card);
+    });
+  }
+}
+
+function reset(){
+  document.getElementById('done-section').style.display='none';
+  document.getElementById('form-section').style.display='block';
+  logLines=[]; jobId=null;
+}
+</script>
+</body>
+</html>
