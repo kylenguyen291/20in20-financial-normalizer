@@ -11,7 +11,8 @@
 body{background:var(--navy);color:var(--bone);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
 
 main{max-width:680px;width:100%;padding:3rem 1.5rem}
-h1{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--bone);margin-bottom:0.5rem}
+h1{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:var(--bone);margin-bottom:0.5rem;text-align:center;white-space:nowrap}
+.hl{color:var(--gold2);font-weight:600}
 .sub{font-size:0.9rem;color:var(--gray);margin-bottom:2.5rem;line-height:1.6}
 label{display:block;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray);margin-bottom:0.5rem;font-weight:600}
 .tag-wrap{display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.12);border-radius:8px;cursor:text;min-height:48px;align-items:center}
@@ -131,8 +132,8 @@ button:disabled{opacity:0.6;cursor:not-allowed}
 <button class="help-btn" id="help-btn" onclick="openOnboarding()" aria-label="Open instructions" title="How to use">?</button>
 
 <main>
-  <h1>Vietnamese Financial<br>Statement Normalizer</h1>
-  <p class="sub">Enter stock tickers and fiscal years to automatically download, extract, and normalize financial statements into structured Excel workbooks.</p>
+  <h1>Vietnamese Financial Statement Normalizer</h1>
+  <p class="sub">Enter stock <span class="hl">tickers</span> and fiscal <span class="hl">years</span> to automatically download, extract, and normalize financial statements into structured Excel workbooks.</p>
 
   <!-- Form -->
   <div id="form-section">
