@@ -8,7 +8,7 @@ A pipeline that automatically downloads, extracts, and normalizes Vietnamese cor
 
 The tool is deployed and accessible at:
 
-> **[https://your-app.up.railway.app](https://your-app.up.railway.app)**
+> **[https://20in20-financial-normalizer-production-e7f7.up.railway.app](https://20in20-financial-normalizer-production-e7f7.up.railway.app)**
 
 Enter stock tickers (e.g. `HPG`, `VIC`, `VHM`) and fiscal years (e.g. `2025, 2024, 2023`), then click **Run Pipeline**. When complete, download the Excel workbooks directly from the browser.
 
