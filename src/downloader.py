@@ -22,33 +22,47 @@ from config import (
 )
 
 
-def _is_target_row(row_text: str, years: list[int]) -> tuple[bool, int | None]:
+def _is_target_row(row_text: str, years: list[int]) -> tuple[bool, int | None, int]:
     """
-    Filter by Vietnamese row text — far more reliable than URL matching.
-    Row text example: "Báo cáo tài chính hợp nhất năm 2024 (đã kiểm toán) | CN/2024"
+    Filter by Vietnamese row text.
+    Strictly excludes: 'quý' (quarterly) and 'công ty mẹ' (parent company).
+    Requires: 'đã kiểm toán' (audited).
+    
+    Priority Scores:
+    - 2: 'hợp nhất' (Consolidated)
+    - 1: Standard (Annual Audited without 'công ty mẹ')
 
-    Returns (is_match, year_or_None).
+    Returns (is_match, year_or_None, priority_score).
     """
     text = row_text.lower()
 
-    # Must be consolidated (hợp nhất)
-    if 'hợp nhất' not in text:
-        return False, None
-
     # Must be audited (đã kiểm toán)
     if 'đã kiểm toán' not in text:
-        return False, None
+        return False, None, -1
 
-    # Must be annual — exclude quarterly (quý)
+    # Must NOT be quarterly (quý)
     if 'quý' in text:
-        return False, None
+        return False, None, -1
+
+    # Must NOT be parent company only (công ty mẹ)
+    if 'công ty mẹ' in text:
+        return False, None, -1
 
     # Match target year
+    matched_year = None
     for year in years:
-        if str(year) in row_text:
-            return True, year
+        if str(year) in text:
+            matched_year = year
+            break
 
-    return False, None
+    if not matched_year:
+        return False, None, -1
+
+    # Calculate Priority
+    if 'hợp nhất' in text:
+        return True, matched_year, 2
+    
+    return True, matched_year, 1
 
 
 
@@ -83,6 +97,8 @@ def _get_pdf_links_playwright(ticker: str, years: list[int]) -> list[dict]:
         pdf_links = page.query_selector_all("a[href*='.pdf'], a[href*='.PDF']")
         print(f"  Found {len(pdf_links)} PDF links in rendered page")
 
+        # Best match tracking: year -> {ticker, year, url, is_consolidated, row_text}
+        year_to_best_match = {}
         seen_years = set()
 
         for link in pdf_links:
@@ -104,12 +120,30 @@ def _get_pdf_links_playwright(ticker: str, years: list[int]) -> list[dict]:
             except Exception:
                 row_text = ""
 
-            is_match, year = _is_target_row(row_text, years)
-            if is_match and year not in seen_years:
-                results.append({"ticker": ticker, "year": year, "url": href})
-                seen_years.add(year)
-                print(f"    ✓ {ticker} {year}: {row_text[:60]}")
-                print(f"       → {href[-70:]}")
+            is_match, year, priority = _is_target_row(row_text, years)
+            if is_match:
+                current_best = year_to_best_match.get(year)
+                # Preference based on priority score (2 > 1 > 0)
+                if not current_best or priority > current_best['priority']:
+                    year_to_best_match[year] = {
+                        "ticker": ticker,
+                        "year": year,
+                        "url": href,
+                        "priority": priority,
+                        "row_text": row_text
+                    }
+
+        # Convert back to results list and log findings
+        for year in sorted(year_to_best_match.keys()):
+            item = year_to_best_match[year]
+            results.append(item)
+            seen_years.add(year)
+            
+            p = item['priority']
+            type_str = "Consolidated" if p == 2 else "Standard"
+            
+            print(f"    ✓ {ticker} {year} ({type_str}): {item['row_text'][:60]}...")
+            print(f"       → {item['url'][-70:]}")
 
         missing = [y for y in years if y not in seen_years]
         if missing:
