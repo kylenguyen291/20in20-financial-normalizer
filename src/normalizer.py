@@ -27,6 +27,21 @@ load_dotenv()
 _SYSTEM_PROMPT_FULL  = (PROMPTS_DIR / "extract_financials.txt").read_text(encoding="utf-8")
 _REQUIRED_KEYS       = {"income_statement", "balance_sheet", "cash_flow"}
 
+
+def _is_empty_result(data: dict) -> bool:
+    """
+    Return True if every numeric field across all three financial sections is
+    None (i.e. Claude returned an all-null response and the result is useless).
+    A cached result like this should be discarded and re-extracted.
+    """
+    for section in ("income_statement", "balance_sheet", "cash_flow"):
+        for k, v in data.get(section, {}).items():
+            if k == "raw_lines":
+                continue
+            if v is not None:
+                return False   # at least one real value found
+    return True
+
 # Appended to the user message when --no-raw-lines is set.
 # Telling the model in the user turn overrides the system prompt's raw_lines
 # instructions without us having to maintain two versions of the prompt file.
@@ -394,7 +409,8 @@ def _validate(data: dict, ticker: str, year: int) -> dict:
 
 
 def normalize(content, ticker: str, year: int, force: bool = False,
-              model: str = CLAUDE_MODEL, include_raw_lines: bool = True) -> dict | None:
+              model: str = CLAUDE_MODEL, include_raw_lines: bool = True,
+              pdf_path: Path | None = None) -> dict | None:
     """
     Normalize content for a single company/year.
 
@@ -409,8 +425,16 @@ def normalize(content, ticker: str, year: int, force: bool = False,
     cache_path = DATA_PROCESSED / f"{ticker}_{year}.json"
 
     if cache_path.exists() and not force:
-        print(f"  → Using cached JSON: {cache_path.name}")
-        return json.loads(cache_path.read_text(encoding="utf-8"))
+        cached = json.loads(cache_path.read_text(encoding="utf-8"))
+        if _is_empty_result(cached):
+            print(
+                f"  ⚠ Cached JSON for {ticker} {year} is all-null — "
+                f"discarding cache and re-normalizing"
+            )
+            cache_path.unlink()   # remove so it isn't reused on the next run either
+        else:
+            print(f"  → Using cached JSON: {cache_path.name}")
+            return cached
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -419,6 +443,21 @@ def normalize(content, ticker: str, year: int, force: bool = False,
     if isinstance(content, str):
         data = _call_text(client, content, ticker, year,
                           model=model, include_raw_lines=include_raw_lines)
+        
+        # QUALITY GATE: If text mode returned garbage (all nulls), try vision fallback
+        if data and _is_empty_result(data) and pdf_path and pdf_path.exists():
+            print(f"  ⚠ Text mode for {ticker} {year} returned no data (likely watermarked/scanned).")
+            print(f"  → Attempting automatic vision fallback...")
+            from src.extractor import _pdf_to_images
+            images = _pdf_to_images(pdf_path)
+            if images:
+                vision_data = _call_vision(client, images, ticker, year,
+                                          model=model, include_raw_lines=include_raw_lines)
+                if vision_data and not _is_empty_result(vision_data):
+                    print(f"  ✓ Vision fallback successful for {ticker} {year}")
+                    data = vision_data
+                else:
+                    print(f"  ✗ Vision fallback also failed or returned no data.")
     elif isinstance(content, list):
         data = _call_vision(client, content, ticker, year,
                             model=model, include_raw_lines=include_raw_lines)
@@ -470,10 +509,14 @@ def run(extracted: dict | None = None, force: bool = False,
             continue
 
         print(f"\n[{stem}]")
+        from config import DATA_RAW
+        pdf_path = DATA_RAW / f"{ticker}_{year}.pdf"
+        
         cache_path = DATA_PROCESSED / f"{ticker}_{year}.json"
         used_cache = cache_path.exists() and not force
         data = normalize(content, ticker, year, force=force,
-                         model=model, include_raw_lines=include_raw_lines)
+                         model=model, include_raw_lines=include_raw_lines,
+                         pdf_path=pdf_path if pdf_path.exists() else None)
         if data:
             results.append(data)
         # Pause between API calls to stay under the 30k tokens/min rate limit.

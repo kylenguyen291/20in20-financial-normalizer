@@ -16,11 +16,57 @@ Returns either:
 """
 
 import base64
+import re
 from pathlib import Path
 
 import pdfplumber
 
 from config import DATA_PROCESSED
+
+# ── Watermark / footer patterns ───────────────────────────────────────────────
+# Lines matching ANY of these regexes (case-insensitive) are stripped from
+# every page before the text is aggregated.  This handles footer watermarks
+# that appear on only a few pages and therefore escape the whole-document
+# _is_drm_watermark heuristic.
+_WATERMARK_PATTERNS: list[re.Pattern] = [
+    # eoffice / DRM stamps
+    re.compile(r"eoffice", re.IGNORECASE),
+    re.compile(r"signed\s+by", re.IGNORECASE),
+    re.compile(r"digitally\s+signed", re.IGNORECASE),
+    re.compile(r"ch[ữu][\s\-]*k[yý]", re.IGNORECASE),          # "chữ ký" (signature)
+    re.compile(r"k[yý]\s+s[ốo]", re.IGNORECASE),              # "ký số"
+    re.compile(r"b[ảa]o\s+m[ậa]t", re.IGNORECASE),            # "bảo mật"
+    re.compile(r"t[àa]i\s+li[ệe]u\s+n[ộo]i\s+b[ộo]", re.IGNORECASE),  # "tài liệu nội bộ"
+    re.compile(r"c[ôo]ng\s+ty\s+c[ổo]\s+ph[ầa]n", re.IGNORECASE),    # generic company footer
+    # Page-count / document-info footers  (e.g. "Trang 1/20", "Page 1 of 20")
+    re.compile(r"^trang\s+\d+\s*/\s*\d+$", re.IGNORECASE),
+    re.compile(r"^page\s+\d+\s+of\s+\d+$", re.IGNORECASE),
+]
+
+
+def _is_watermark_line(line: str) -> bool:
+    """Return True if the line matches a known watermark / footer pattern."""
+    stripped = line.strip()
+    return any(p.search(stripped) for p in _WATERMARK_PATTERNS)
+
+
+def _strip_watermark_lines(text: str) -> str:
+    """
+    Remove watermark / footer lines from a block of text.
+    Blank lines produced by the removal are collapsed.
+    """
+    cleaned = [l for l in text.splitlines() if not _is_watermark_line(l)]
+    # Collapse runs of 3+ blank lines into two
+    result, blanks = [], 0
+    for l in cleaned:
+        if l.strip() == "":
+            blanks += 1
+            if blanks <= 2:
+                result.append(l)
+        else:
+            blanks = 0
+            result.append(l)
+    return "\n".join(result)
 
 
 def _extract_table_text(page) -> str:
@@ -29,14 +75,19 @@ def _extract_table_text(page) -> str:
     for table in tables:
         for row in table:
             cleaned = [cell.strip() if cell else "" for cell in row]
-            lines.append("\t".join(cleaned))
+            row_text = "\t".join(cleaned)
+            # Skip rows that are entirely watermark/footer content
+            if not _is_watermark_line(row_text):
+                lines.append(row_text)
         lines.append("")
     return "\n".join(lines)
 
 
 def _extract_page_text(page) -> str:
     text = page.extract_text()
-    return text.strip() if text else ""
+    if not text:
+        return ""
+    return _strip_watermark_lines(text).strip()
 
 
 def _pdf_to_images(pdf_path: Path, max_pages: int = 25, dpi: int = 72) -> list[dict]:
@@ -208,6 +259,22 @@ def extract(pdf_path: Path, force: bool = False):
                       if l.strip() and not l.startswith("--- Page")})
         print(f"  ⚠ DRM/watermark PDF detected ({unique} unique line(s) across all pages)")
         print(f"  → Switching to Claude vision mode")
+        return _pdf_to_images(pdf_path)
+
+    # ── Case 5: text collapsed to watermarks after per-line filter ────────────
+    # The _extract_page_text / _extract_table_text helpers already stripped known
+    # watermark lines.  Re-check: if meaningful content (non-header, non-blank)
+    # dropped below MIN_CHARS, the "text" was mostly footers — use vision.
+    content_lines = [
+        l for l in full_text.splitlines()
+        if l.strip() and not l.startswith("--- Page")
+    ]
+    meaningful_chars = sum(len(l) for l in content_lines)
+    if meaningful_chars < MIN_CHARS:
+        print(
+            f"  ⚠ Only {meaningful_chars} meaningful chars remain after watermark strip "
+            f"— text is watermark-only, switching to vision"
+        )
         return _pdf_to_images(pdf_path)
 
     # ── Case 1: pure digital PDF ──────────────────────────────────────────────
